@@ -11,11 +11,9 @@ This project demonstrates warehouse-like compute elasticity for Apache Flink on 
 
 | Document | What it covers |
 | --- | --- |
-| [`docs/SETUP-AND-RUN.md`](docs/SETUP-AND-RUN.md) | Step-by-step install, running the scenarios, the web console, and troubleshooting. Start here. |
-| [`docs/BACKEND.md`](docs/BACKEND.md) | The Java Flink job class by class, the Python load generator, every Kubernetes YAML file one by one, the console server, and the shell scripts. |
-| [`docs/FRONTEND.md`](docs/FRONTEND.md) | The web console UI: architecture, live data flow, state handling, and every component. |
-| [`ARTICLE.md`](ARTICLE.md) | Narrative walkthrough of the PoC with the full runbook. |
-| [`ARTICLE-checkpoints-vs-savepoints.md`](ARTICLE-checkpoints-vs-savepoints.md) | The campaign told as a story, explaining checkpoints and savepoints. |
+| [`docs/SETUP-AND-RUN.md`](flink-elasticity-poc/docs/SETUP-AND-RUN.md) | Step-by-step install, running the scenarios, the web console, and troubleshooting. Start here. |
+| [`docs/BACKEND.md`](flink-elasticity-poc/docs/BACKEND.md) | The Java Flink job class by class, the Python load generator, every Kubernetes YAML file one by one, the console server, and the shell scripts. |
+| [`docs/FRONTEND.md`](flink-elasticity-poc/docs/FRONTEND.md) | The web console UI: architecture, live data flow, state handling, and every component. |
 
 The rest of this file is the condensed operational reference.
 
@@ -40,8 +38,8 @@ flowchart LR
 ## Repository Layout
 
 ```text
+README.md
 flink-elasticity-poc/
-├── README.md
 ├── setup.sh
 ├── teardown.sh
 ├── versions.env
