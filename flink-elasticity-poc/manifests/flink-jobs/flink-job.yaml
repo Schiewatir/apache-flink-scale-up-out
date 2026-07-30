@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flink-jobs
+---
+# NOTE: The `minio-s3-credentials` Secret is created by setup.sh with the real
+# MinIO access/secret keys. It is intentionally NOT defined here — embedding a
+# placeholder Secret in this manifest would clobber the real credentials when
+# `kubectl apply -f flink-job.yaml` runs after setup.sh, causing the JobManager
+# to fail checkpoint storage init with S3 InvalidAccessKeyId (403).
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkDeployment
+metadata:
+  name: flink-elastic-job
+  namespace: flink-jobs
+spec:
+  image: flink-elastic/job:0.1.1
+  flinkVersion: v2_2
+  serviceAccount: flink
+  mode: native
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "1"
+    # Baseline parallelism is 1 so the elasticity demo starts from a single
+    # TaskManager and the autoscaler scales UP under load (S2) and back DOWN
+    # when load subsides (S3). The single-replica load generator saturates
+    # roughly one TM (~11k events/s), which is exactly what is needed to drive
+    # a 1 -> 2+ scale-up; a baseline of 2 could not be saturated by one loadgen.
+    parallelism.default: "1"
+    pipeline.max-parallelism: "120"
+    state.backend.type: rocksdb
+    state.backend.incremental: "true"
+    execution.checkpointing.interval: 30s
+    execution.checkpointing.min-pause: 10s
+    execution.checkpointing.timeout: 120s
+    execution.checkpointing.externalized-checkpoint-retention: RETAIN_ON_CANCELLATION
+    state.checkpoints.dir: s3://checkpoints/flink-elastic
+    state.savepoints.dir: s3://savepoints/flink-elastic
+    s3.endpoint: http://minio.storage.svc.cluster.local:9000
+    s3.path.style.access: "true"
+    # Credentials are supplied to the shaded Hadoop S3A filesystem via the standard
+    # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY environment variables (see podTemplate).
+    # NOTE: Flink does NOT substitute ${ENV} placeholders in flinkConfiguration values,
+    # so s3.access-key/s3.secret-key must not be set to ${...} here.
+    s3.connection.maximum: "100"
+    jobmanager.scheduler: adaptive
+    state.backend.local-recovery: "true"
+    restart-strategy.type: fixed-delay
+    restart-strategy.fixed-delay.attempts: "10"
+    restart-strategy.fixed-delay.delay: 10 s
+    classloader.resolve-order: parent-first
+
+    # Autoscaler keys for flink-kubernetes-operator 1.12.x
+    job.autoscaler.enabled: "true"
+    job.autoscaler.stabilization.interval: "1m"
+    job.autoscaler.metrics.window: "3m"
+    job.autoscaler.target.utilization: "0.6"
+    job.autoscaler.target.utilization.boundary: "0.2"
+    job.autoscaler.scale-down.interval: "5m"
+    job.autoscaler.vertex.min-parallelism: "1"
+    job.autoscaler.vertex.max-parallelism: "6"
+
+  podTemplate:
+    apiVersion: v1
+    kind: Pod
+    spec:
+      containers:
+        - name: flink-main-container
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: minio-s3-credentials
+                  key: accessKey
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-s3-credentials
+                  key: secretKey
+
+  jobManager:
+    resource:
+      cpu: 0.5
+      memory: "1024m"
+  taskManager:
+    resource:
+      cpu: 0.5
+      memory: "1536m"
+  job:
+    jarURI: local:///opt/flink/usrlib/flink-elastic-job.jar
+    parallelism: 1
+    upgradeMode: savepoint
+    state: running

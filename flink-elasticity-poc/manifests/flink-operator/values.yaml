@@ -1,0 +1,28 @@
+watchNamespaces:
+  - flink-jobs
+
+defaultConfiguration:
+  create: true
+  append: true
+  flink-conf.yaml: |
+    kubernetes.operator.job.autoscaler.enabled: true
+    kubernetes.operator.reconcile.interval: 15 s
+    kubernetes.operator.observer.progress-check.interval: 10 s
+
+operatorPod:
+  resources:
+    requests:
+      cpu: 200m
+      memory: 1Gi
+    limits:
+      cpu: 500m
+      # 768Mi OOM-killed the operator every ~11 minutes on this stack, which
+      # stalls the autoscaler (it runs inside the operator) and destabilizes
+      # scenario runs; 1.5Gi keeps it up.
+      memory: 1536Mi
+
+webhook:
+  create: true
+
+autoscaler:
+  enabled: true

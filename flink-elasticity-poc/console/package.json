@@ -1,0 +1,31 @@
+{
+  "name": "flink-elastic-console",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Web console for the Flink elasticity PoC: live data flow, topic preview, elasticity telemetry, and one-click scenario execution.",
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=20.19.0 <21"
+  },
+  "scripts": {
+    "build:shared": "npm run build --workspace @flink-console/shared",
+    "build:backend": "npm run build --workspace @flink-console/backend",
+    "build:frontend": "npm run build --workspace @flink-console/frontend",
+    "build": "npm run build:shared && npm run build:frontend && npm run build:backend",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "start": "node backend/dist/index.js"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "8.8.0",
+    "@typescript-eslint/parser": "8.8.0",
+    "eslint": "8.57.1",
+    "prettier": "3.3.3",
+    "typescript": "5.6.2"
+  }
+}
